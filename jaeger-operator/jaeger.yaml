@@ -1,0 +1,68 @@
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger
+  namespace: observability
+spec:
+  collector:
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - jaeger
+            topologyKey: kubernetes.io/hostname
+          weight: 100
+    maxReplicas: 3
+    replicas: 2
+    resources:
+      limits:
+        cpu: 512m
+        memory: 516Mi
+  ingress:
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    enabled: true
+    hosts:
+    - jaeger.example.com
+    security: none
+    tls:
+    - hosts:
+      - jaeger.example.com
+      secretName: jaeger-tls
+  query:
+    metricsStorage:
+      type: prometheus
+    options:
+      log-level: info
+      prometheus:
+        server-url: http://vmsingle-vm-victoria-metrics-k8s-stack.vm.svc:8429
+      query:
+        base-path: /
+    resources: {}
+  resources: {}
+  sampling:
+    options: {}
+  storage:
+    cassandraCreateSchema:
+      datacenter: msk
+      enabled: false
+      mode: prod
+    dependencies:
+      enabled: false
+      resources: {}
+      schedule: 0 0 */2 * *
+    options:
+      cassandra:
+        keyspace: jaeger_k8s
+        servers: scylla-client.scylla.svc
+    type: cassandra
+  strategy: production
+  ui:
+    options:
+      dependencies:
+        menuEnabled: true
